@@ -1,5 +1,6 @@
 #this code to test with imperial website
 #update: persistent HTTPS connection — TLS handshake paid once, reused every poll
+import machine
 from machine import Timer
 import gc
 import json
@@ -8,7 +9,7 @@ import socket
 import ssl
 import time
 
-import all2_adjgain as load_controller
+import all2_adjgain_2 as load_controller
 
 try:
     import _thread
@@ -203,7 +204,7 @@ def connect_wifi():
     print("Connecting Wi-Fi...")
     wlan.connect(WIFI_SSID, WIFI_PASSWORD)
 
-    deadline = time.time() + 100
+    deadline = time.time() + 20
     while not wlan.isconnected():
         if time.time() >= deadline:
             raise RuntimeError("Wi-Fi connection timed out")
@@ -214,11 +215,12 @@ def connect_wifi():
 
 
 def fetch_load_power_data():
-    #print("fetch")
     data = _https_client.get_json(LOAD_POWER_PATH)
 
     if isinstance(data, dict):
-        load_pwr = data.get("demand")
+        # load_pwr = data.get("load_pwr")
+        measured_power = min (data.get("demand"), 10)
+        load_pwr = (measured_power - 0.31812127) / 1.3382855
     else:
         load_pwr = data
         print(load_pwr, "unexpected response format")
@@ -273,6 +275,13 @@ def collect_data():
 
         except Exception as error:
             print("Collector error:", error)
+            wlan = network.WLAN(network.STA_IF)
+            if not wlan.isconnected():
+                print("WiFi lost, reconnecting...")
+                try:
+                    connect_wifi()
+                except Exception as wifi_error:
+                    print("WiFi reconnect failed:", wifi_error)
             time.sleep_ms(API_RETRY_MS)
 
 
@@ -349,9 +358,17 @@ def main():
 
 try:
     main()
-except Exception as e:
-    print("Fatal error in main loop:", e)
-finally:
+except KeyboardInterrupt:
+    # Thonny Stop button — clean shutdown, no reset
     _https_client.close()
     load_controller.all_off()
-
+except Exception as e:
+    # Any other fatal error — reset both cores cleanly
+    print("Fatal error:", e)
+    try:
+        _https_client.close()
+        load_controller.all_off()
+    except Exception:
+        pass
+    time.sleep_ms(500)
+    machine.reset()
