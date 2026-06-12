@@ -31,8 +31,8 @@ CURRENT_SENSE_OHMS = 0.33
 VOLTAGE_DIVIDER_RATIO = 2.0
 
 # Adjustable safety/current limits.
-MAX_LED_CURRENT_A = 0.8
-OVERCURRENT_SHUTDOWN_A = 1.30
+MAX_LED_CURRENT_A = 1.0
+OVERCURRENT_SHUTDOWN_A = 1.50
 MAX_LED_VOLTAGE_V = 6.0
 MIN_VALID_LED_VOLTAGE_V = 0.05
 MIN_CURRENT_SETPOINT_A = 0.01
@@ -46,7 +46,7 @@ NOMINAL_RED_V = 2.0
 MAX_REQUESTED_LOAD_POWER_W = (
     MAX_LED_CURRENT_A * NOMINAL_BLUE_V
     + MAX_LED_CURRENT_A * NOMINAL_GREEN_V
-    + MAX_LED_CURRENT_A * NOMINAL_RED_V
+    + MAX_LED_CURRENT_A * NOMINAL_RED_V + 2
 )
 
 PWM_FREQ_HZ = 100000
@@ -101,7 +101,7 @@ class LedChannel:
         self.current_a = 0.0
         self.voltage_v = nominal_voltage
         self.current_setpoint_a = 0.0
-        self.controller = PID(0.001, 1, 0, setpoint=0.0, scale="ms")
+        self.controller = PID(0.006, 3, 0, setpoint=0.0, scale="ms")
 
     def off(self):
         self.current_setpoint_a = 0.0
