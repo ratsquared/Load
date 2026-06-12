@@ -9,7 +9,7 @@ import socket
 import ssl
 import time
 
-import all2_adjgain_2 as load_controller
+import all2_adjgain as load_controller
 
 try:
     import _thread
